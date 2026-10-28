@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>지식왕 도전 · 상식 퀴즈</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Nanum+Myeongjo:wght@700;800&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="sheet">
+    <header class="sheet-head">
+      <div class="title-block">
+        <p class="exam-label">상식 영역 · 4지선다</p>
+        <h1>지식왕 도전</h1>
+      </div>
+      <button id="themeBtn" class="btn small" type="button">다크 모드</button>
+    </header>
+
+    <!-- 시작 화면 -->
+    <section id="startScreen" class="screen">
+      <form id="startForm" class="start-grid">
+        <div class="panel">
+          <h2>응시자 정보</h2>
+          <label for="playerName" class="field">이름(닉네임)
+            <input id="playerName" type="text" maxlength="12" placeholder="예: 지식탐험가">
+          </label>
+          <p class="muted">한국사 · 과학 · 지리 · 일반상식 총 <b id="totalCount">40</b>문제. 문제를 풀 때마다 정답과 해설을 바로 보여 줍니다.</p>
+        </div>
+
+        <fieldset class="panel modes">
+          <legend><h2>게임 모드</h2></legend>
+          <label class="mode-card"><input type="radio" name="mode" value="classic" id="modeClassic" checked>
+            <span><b>클래식</b><small>4개 분야 40문제를 순서대로 풀어요.</small></span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="speed" id="modeSpeed">
+            <span><b>스피드 퀴즈</b><small>무작위 20문제 · 문제당 15초 · 남은 초만큼 보너스 · 힌트 -5점</small></span></label>
+          <label class="mode-card"><input type="radio" name="mode" value="category" id="modeCategory">
+            <span><b>카테고리 도전</b><small>한 분야를 골라 10문제를 집중해서 풀어요.</small></span></label>
+          <label id="categoryPicker" class="field" for="categorySelect" hidden>도전할 분야
+            <select id="categorySelect">
+              <option>한국사</option><option>과학</option><option>지리</option><option>일반상식</option>
+            </select>
+          </label>
+          <button class="btn primary big" type="submit">게임 시작</button>
+        </fieldset>
+
+        <div class="panel ranking">
+          <div class="rank-head"><h2>명예의 전당 TOP 10</h2><button id="resetRanking" class="btn small ghost" type="button">기록 초기화</button></div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>순위</th><th>이름</th><th>모드</th><th class="num">점수</th></tr></thead>
+              <tbody id="rankingStart"></tbody>
+            </table>
+          </div>
+          <p class="muted small-note">배점: 쉬움 10 · 보통 15 · 어려움 20점. 기록은 이 브라우저에 저장됩니다.</p>
+        </div>
+      </form>
+    </section>
+
+    <!-- 문제 화면 -->
+    <section id="quizScreen" class="screen" hidden>
+      <div class="quiz-top">
+        <span id="modeLabel" class="chip">클래식</span>
+        <span class="progress-text"><span id="progressText">1 / 40</span></span>
+        <span class="score">점수 <b id="scoreText">0</b></span>
+      </div>
+      <div class="progress"><i id="progressBar"></i></div>
+
+      <div id="timerWrap" class="timer" hidden>
+        <div class="progress timer-bar"><i id="timerBar"></i></div>
+        <span id="timerText">15초</span>
+      </div>
+
+      <article class="question-card">
+        <div class="q-meta">
+          <span id="qCategory" class="chip outline">한국사</span>
+          <span id="qDifficulty" class="chip level">쉬움 · 10점</span>
+        </div>
+        <h2 class="q-text"><span id="qNumber" class="q-num">1.</span> <span id="qText"></span></h2>
+        <div id="options" class="options"></div>
+        <p id="hintText" class="hint" hidden></p>
+        <div class="q-actions">
+          <button id="hintBtn" class="btn" type="button" hidden>💡 힌트 사용 (-5점)</button>
+          <span class="muted keys">키보드 <kbd>1</kbd>~<kbd>4</kbd>로 답 선택</span>
+          <button id="quitBtn" class="btn ghost small" type="button">그만하기</button>
+        </div>
+      </article>
+    </section>
+
+    <!-- 결과 화면 -->
+    <section id="resultScreen" class="screen" hidden>
+      <div class="result-grid">
+        <div class="panel result-main">
+          <p id="resultMode" class="exam-label">클래식</p>
+          <h2 id="resultTitle">지식왕 등극!</h2>
+          <p class="big-score"><b id="resultScore">0</b><span>점</span></p>
+          <p id="resultDetail"></p>
+          <p id="resultRank" class="rank-msg"></p>
+          <table class="breakdown">
+            <thead><tr><th>분야</th><th>정답</th><th>정답률</th></tr></thead>
+            <tbody id="breakdown"></tbody>
+          </table>
+          <div class="row">
+            <button id="retryBtn" class="btn primary" type="button">같은 모드 다시 하기</button>
+            <button id="homeBtn" class="btn" type="button">처음으로</button>
+          </div>
+        </div>
+        <div class="panel ranking">
+          <h2>명예의 전당 TOP 10</h2>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>순위</th><th>이름</th><th>모드</th><th class="num">점수</th></tr></thead>
+              <tbody id="rankingResult"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="sheet-foot">문제는 CLAUDE.md의 「퀴즈 문제 교차 검증 가이드라인」에 따라 정답 유일성 · 최상급 기준 · 시점과 범위를 확인했습니다.</footer>
+  </div>
+
+  <!-- 즉시 피드백 -->
+  <dialog id="feedback" class="feedback">
+    <div id="fbMark" class="fb-mark" aria-hidden="true">○</div>
+    <h2 id="fbTitle">정답입니다!</h2>
+    <p id="fbAnswer" class="fb-answer"></p>
+    <p id="fbExplain" class="fb-explain"></p>
+    <button id="fbNext" class="btn primary" type="button">다음 문제</button>
+  </dialog>
+
+  <script src="quiz-data.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

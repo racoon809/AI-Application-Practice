@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>메모 보드 시작 페이지</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&family=Nanum+Pen+Script&display=swap">
+<style>
+/* 레이아웃: 코르크 보드 위에 메모지 4장을 2열로 붙인 시작 페이지 (모바일은 1열) */
+:root {
+  --board: #e9ecef;        /* 보드 바탕 */
+  --ink: #1f2a37;          /* 본문 글자 */
+  --muted: #5b6676;        /* 보조 글자 */
+  --note-time: #fff6c7;    /* 노란 메모지 */
+  --note-todo: #e3f4ea;    /* 연두 메모지 */
+  --note-weather: #e2efff; /* 하늘 메모지 */
+  --note-news: #fde7e4;    /* 분홍 메모지 */
+  --pin: #d1453b;          /* 압정 */
+  --accent: #1a66d1;       /* 링크·포커스 */
+  --line: rgba(31, 42, 55, .14);
+  --shadow: 0 1px 2px rgba(31,42,55,.10), 0 8px 18px -10px rgba(31,42,55,.35);
+  --search-bg: #ffffff;
+  --font-hand: "Nanum Pen Script", "Comic Sans MS", cursive;
+  --font-body: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --board: #161b22; --ink: #e8ebef; --muted: #9aa5b4;
+    --note-time: #3a3520; --note-todo: #1f3329; --note-weather: #1d2b40; --note-news: #3b2422;
+    --pin: #ef6b5f; --accent: #6ea8ff; --line: rgba(232,235,239,.14);
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 22px -12px rgba(0,0,0,.8);
+    --search-bg: #1f2630; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --board: #161b22; --ink: #e8ebef; --muted: #9aa5b4;
+  --note-time: #3a3520; --note-todo: #1f3329; --note-weather: #1d2b40; --note-news: #3b2422;
+  --pin: #ef6b5f; --accent: #6ea8ff; --line: rgba(232,235,239,.14);
+  --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 22px -12px rgba(0,0,0,.8);
+  --search-bg: #1f2630; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { margin: 0; word-break: keep-all; overflow-wrap: break-word;
+  background: var(--board); color: var(--ink); font-family: var(--font-body);
+  font-size: 15px; line-height: 1.6;
+  background-image: radial-gradient(var(--line) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.wrap {
+  max-width: 1040px; margin: 0 auto;
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 28px;
+}
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+header.top h1 { font-family: var(--font-hand); font-weight: 400; font-size: 2.6rem; line-height: 1; margin: 0; }
+header.top p { margin: 0; color: var(--muted); font-size: .9rem; }
+.theme-btn {
+  font: inherit; font-size: .85rem; color: var(--ink); background: transparent;
+  border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; cursor: pointer;
+}
+
+/* 검색바 */
+form.search { display: flex; gap: 0; background: var(--search-bg); border: 1px solid var(--line);
+  border-radius: 999px; box-shadow: var(--shadow); overflow: hidden; }
+form.search label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+form.search input { flex: 1; min-width: 0; border: 0; background: transparent; color: var(--ink);
+  font: inherit; font-size: 1.05rem; padding: 14px 20px; outline: none; }
+form.search button { border: 0; background: var(--accent); color: #fff; font: inherit; font-weight: 700;
+  padding: 0 22px; cursor: pointer; }
+form.search:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.search-fallback { margin: -18px 0 0 20px; font-size: .85rem; color: var(--muted); }
+.search-fallback a { color: var(--accent); }
+
+/* 메모지 보드 */
+.board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; }
+@media (max-width: 720px) { .board { grid-template-columns: 1fr; } }
+.note {
+  position: relative; padding: 26px 22px 20px; box-shadow: var(--shadow);
+  min-width: 0; display: grid; gap: 10px; align-content: start;
+}
+.note::before { /* 압정 */
+  content: ""; position: absolute; top: 8px; left: 50%; width: 12px; height: 12px; margin-left: -6px;
+  border-radius: 50%; background: var(--pin); box-shadow: 0 2px 2px rgba(0,0,0,.25);
+}
+.note:nth-child(1) { background: var(--note-time); transform: rotate(-.8deg); }
+.note:nth-child(2) { background: var(--note-todo); transform: rotate(.6deg); }
+.note:nth-child(3) { background: var(--note-weather); transform: rotate(.5deg); }
+.note:nth-child(4) { background: var(--note-news); transform: rotate(-.5deg); }
+@media (prefers-reduced-motion: reduce) { .note { transform: none !important; } }
+.note h2 { font-family: var(--font-hand); font-weight: 400; font-size: 1.9rem; line-height: 1; margin: 0; }
+.note .sub { color: var(--muted); font-size: .82rem; margin: 0; }
+
+/* 시계 */
+.clock { font-family: var(--font-mono); font-size: clamp(2.4rem, 7vw, 3.6rem); font-weight: 600;
+  letter-spacing: -.02em; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.clock small { font-size: .45em; color: var(--muted); margin-left: 4px; }
+.date { font-size: 1rem; }
+.greeting { font-family: var(--font-hand); font-size: 1.5rem; margin: 0; }
+
+/* 할 일 */
+form.todo-form { display: flex; gap: 8px; }
+form.todo-form input { flex: 1; min-width: 0; font: inherit; padding: 8px 10px; color: var(--ink);
+  background: transparent; border: 0; border-bottom: 1px dashed var(--muted); outline: none; }
+form.todo-form input:focus { border-bottom-style: solid; border-bottom-color: var(--accent); }
+form.todo-form button, .clear-btn { font: inherit; font-size: .85rem; border: 1px solid var(--line);
+  background: transparent; color: var(--ink); border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+ul.todos { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+ul.todos li { display: flex; align-items: center; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+ul.todos li span { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+ul.todos li.done span { text-decoration: line-through; color: var(--muted); }
+ul.todos input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); }
+ul.todos button { border: 0; background: none; color: var(--muted); cursor: pointer; font-size: 1rem; }
+.todo-meta { display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: .82rem; }
+
+/* 날씨 */
+.weather-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+select { font: inherit; font-size: .85rem; color: var(--ink); background: transparent;
+  border: 1px solid var(--line); border-radius: 6px; padding: 3px 6px; }
+.weather-now { display: flex; align-items: center; gap: 16px; }
+.weather-now .icon { font-size: 3rem; line-height: 1; }
+.weather-now .temp { font-family: var(--font-mono); font-size: 2.6rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.weather-now .desc { font-size: 1rem; }
+.forecast { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 6px; text-align: center; font-size: .82rem; }
+.forecast div { border-top: 1px solid var(--line); padding-top: 6px; }
+.forecast b { display: block; font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* 뉴스 */
+ol.news { margin: 0; padding-left: 1.3em; display: grid; gap: 6px; }
+ol.news a { color: var(--ink); text-decoration: none; border-bottom: 1px solid transparent; }
+ol.news a:hover, ol.news a:focus-visible { border-bottom-color: var(--accent); color: var(--accent); }
+ol.news .meta { display: block; color: var(--muted); font-size: .78rem; font-family: var(--font-mono); }
+.status { font-size: .8rem; color: var(--muted); margin: 0; }
+.status.offline::before { content: "● "; color: var(--pin); }
+.status.live::before { content: "● "; color: #2f9e57; }
+a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+footer { color: var(--muted); font-size: .8rem; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>오늘의 시작 페이지</h1>
+      <p>인공지능활용실습 1주차 · 클로드 아티팩트로 만든 개인 시작 홈페이지</p>
+    </div>
+    <button class="theme-btn" id="themeBtn" type="button">다크 모드</button>
+  </header>
+
+  <form class="search" id="searchForm" role="search">
+    <label for="q">구글 검색어</label>
+    <input id="q" name="q" type="search" placeholder="Google에서 검색하거나 주소 입력" autocomplete="off">
+    <button type="submit">검색</button>
+  </form>
+  <p class="search-fallback" id="searchFallback" hidden>새 탭이 열리지 않으면 <a id="searchLink" href="https://www.google.com" target="_blank" rel="noopener">여기를 눌러 검색 결과 열기</a></p>
+
+  <main class="board">
+    <section class="note" id="widget-clock" aria-label="현재 시간">
+      <h2>현재 시간</h2>
+      <div class="clock" id="clock">--:--<small>:--</small></div>
+      <div class="date" id="date">-</div>
+      <p class="greeting" id="greeting">좋은 하루 보내세요!</p>
+    </section>
+
+    <section class="note" id="widget-todo" aria-label="오늘의 할 일">
+      <h2>오늘의 할 일</h2>
+      <form class="todo-form" id="todoForm">
+        <input id="todoInput" type="text" placeholder="할 일을 적고 Enter" maxlength="80" aria-label="새 할 일">
+        <button type="submit">추가</button>
+      </form>
+      <ul class="todos" id="todoList"></ul>
+      <div class="todo-meta"><span id="todoCount">0개 남음</span><button class="clear-btn" id="clearDone" type="button">완료 항목 지우기</button></div>
+    </section>
+
+    <section class="note" id="widget-weather" aria-label="오늘의 날씨">
+      <div class="weather-head">
+        <h2>오늘의 날씨</h2>
+        <label class="sub" for="city">지역
+          <select id="city">
+            <option value="37.5665,126.9780">서울</option>
+            <option value="34.8118,126.3922">목포</option>
+            <option value="35.1796,129.0756">부산</option>
+            <option value="35.1595,126.8526">광주</option>
+            <option value="33.4996,126.5312">제주</option>
+          </select>
+        </label>
+      </div>
+      <div class="weather-now">
+        <div class="icon" id="wIcon" aria-hidden="true">⛅</div>
+        <div><div class="temp" id="wTemp">--°</div><div class="desc" id="wDesc">불러오는 중…</div></div>
+      </div>
+      <p class="sub" id="wExtra">&nbsp;</p>
+      <div class="forecast" id="forecast"></div>
+      <p class="status" id="wStatus">Open-Meteo 날씨 API 연결 중</p>
+    </section>
+
+    <section class="note" id="widget-news" aria-label="최신 기술 뉴스">
+      <h2>최신 기술 뉴스</h2>
+      <ol class="news" id="news"></ol>
+      <p class="status" id="nStatus">Hacker News API 연결 중</p>
+    </section>
+  </main>
+  <footer>시계·할 일은 브라우저 안에서 동작하고, 날씨는 Open-Meteo, 뉴스는 Hacker News 공개 API에서 가져옵니다.</footer>
+</div>
+
+<script>
+(function () {
+  // ---------- 공통: 안전한 localStorage ----------
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* 저장 불가 환경 무시 */ } }
+  };
+
+  // ---------- 다크 모드 ----------
+  const root = document.documentElement, themeBtn = document.getElementById('themeBtn');
+  function isDark() {
+    const t = root.getAttribute('data-theme');
+    return t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function syncThemeBtn() { themeBtn.textContent = isDark() ? '라이트 모드' : '다크 모드'; }
+  const savedTheme = store.get('start.theme', null);
+  if (savedTheme) root.setAttribute('data-theme', savedTheme);
+  syncThemeBtn();
+  themeBtn.addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next); store.set('start.theme', next); syncThemeBtn();
+  });
+
+  // ---------- 시계 ----------
+  const clockEl = document.getElementById('clock'), dateEl = document.getElementById('date'), greetEl = document.getElementById('greeting');
+  const pad = n => String(n).padStart(2, '0');
+  function tick() {
+    const now = new Date();
+    clockEl.innerHTML = pad(now.getHours()) + ':' + pad(now.getMinutes()) + '<small>:' + pad(now.getSeconds()) + '</small>';
+    dateEl.textContent = now.toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+    const h = now.getHours();
+    greetEl.textContent = h < 6 ? '늦은 밤이에요, 푹 쉬세요.' : h < 12 ? '좋은 아침이에요!' : h < 18 ? '오후도 힘내요!' : '오늘 하루 수고했어요.';
+  }
+  tick(); setInterval(tick, 1000);
+
+  // ---------- 구글 검색 ----------
+  const form = document.getElementById('searchForm'), q = document.getElementById('q');
+  const fb = document.getElementById('searchFallback'), fbLink = document.getElementById('searchLink');
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const term = q.value.trim(); if (!term) { q.focus(); return; }
+    const url = 'https://www.google.com/search?q=' + encodeURIComponent(term);
+    fbLink.href = url; fb.hidden = false;
+    const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener';
+    document.body.appendChild(a); a.click(); a.remove();
+  });
+
+  // ---------- 오늘의 할 일 ----------
+  const todoForm = document.getElementById('todoForm'), todoInput = document.getElementById('todoInput');
+  const todoList = document.getElementById('todoList'), todoCount = document.getElementById('todoCount');
+  let todos = store.get('start.todos', [
+    { id: 1, text: '인공지능활용실습 과제 깃허브에 올리기', done: false },
+    { id: 2, text: '시작 페이지 게시 링크 복사하기', done: true }
+  ]);
+  function renderTodos() {
+    todoList.innerHTML = '';
+    todos.forEach(t => {
+      const li = document.createElement('li'); if (t.done) li.className = 'done';
+      const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = t.done; cb.id = 'todo-' + t.id;
+      cb.setAttribute('aria-label', t.text + ' 완료');
+      cb.addEventListener('change', () => { t.done = cb.checked; save(); });
+      const span = document.createElement('span'); span.textContent = t.text;
+      const del = document.createElement('button'); del.type = 'button'; del.textContent = '✕'; del.setAttribute('aria-label', t.text + ' 삭제');
+      del.addEventListener('click', () => { todos = todos.filter(x => x.id !== t.id); save(); });
+      li.append(cb, span, del); todoList.appendChild(li);
+    });
+    const left = todos.filter(t => !t.done).length;
+    todoCount.textContent = todos.length ? left + '개 남음 / 전체 ' + todos.length + '개' : '할 일을 추가해 보세요';
+  }
+  function save() { store.set('start.todos', todos); renderTodos(); }
+  todoForm.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = todoInput.value.trim(); if (!text) return;
+    todos.push({ id: Date.now(), text, done: false }); todoInput.value = ''; save();
+  });
+  document.getElementById('clearDone').addEventListener('click', () => { todos = todos.filter(t => !t.done); save(); });
+  renderTodos();
+
+  // ---------- 날씨 (Open-Meteo, API 키 불필요) ----------
+  const WMO = { 0:['☀️','맑음'],1:['🌤️','대체로 맑음'],2:['⛅','구름 조금'],3:['☁️','흐림'],45:['🌫️','안개'],48:['🌫️','짙은 안개'],
+    51:['🌦️','약한 이슬비'],53:['🌦️','이슬비'],55:['🌧️','강한 이슬비'],61:['🌧️','약한 비'],63:['🌧️','비'],65:['🌧️','강한 비'],
+    71:['🌨️','약한 눈'],73:['🌨️','눈'],75:['❄️','강한 눈'],80:['🌦️','소나기'],81:['🌧️','강한 소나기'],82:['⛈️','폭우'],95:['⛈️','뇌우'],96:['⛈️','우박 동반 뇌우'],99:['⛈️','강한 우박 뇌우'] };
+  const wmo = c => WMO[c] || ['🌡️', '정보 없음'];
+  const citySel = document.getElementById('city');
+  const savedCity = store.get('start.city', null); if (savedCity) citySel.value = savedCity;
+  citySel.addEventListener('change', () => { store.set('start.city', citySel.value); loadWeather(); });
+  async function loadWeather() {
+    const [lat, lon] = citySel.value.split(',');
+    const status = document.getElementById('wStatus');
+    try {
+      const url = 'https://api.open-meteo.com/v1/forecast?latitude=' + lat + '&longitude=' + lon +
+        '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m' +
+        '&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=Asia%2FSeoul&forecast_days=4';
+      const res = await fetch(url); if (!res.ok) throw new Error(res.status);
+      const d = await res.json();
+      renderWeather({
+        temp: d.current.temperature_2m, code: d.current.weather_code, feels: d.current.apparent_temperature,
+        hum: d.current.relative_humidity_2m, wind: d.current.wind_speed_10m,
+        days: d.daily.time.map((t, i) => ({ t, code: d.daily.weather_code[i], max: d.daily.temperature_2m_max[i], min: d.daily.temperature_2m_min[i] }))
+      });
+      status.className = 'status live'; status.textContent = '실시간 · Open-Meteo · ' + new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) + ' 갱신';
+    } catch (err) {
+      // 아티팩트 미리보기처럼 외부 요청이 막힌 환경에서는 예시 값을 보여 줍니다.
+      const today = new Date();
+      renderWeather({ temp: 17, code: 2, feels: 16, hum: 55, wind: 9,
+        days: [0,1,2,3].map(i => { const t = new Date(today); t.setDate(t.getDate() + i);
+          return { t: t.toISOString().slice(0,10), code: [2,0,3,61][i], max: [20,21,18,16][i], min: [11,10,12,12][i] }; }) });
+      status.className = 'status offline'; status.textContent = '예시 데이터 · 이 환경에서는 날씨 API에 연결할 수 없어요 (GitHub Pages나 로컬에서 열면 실시간으로 표시)';
+    }
+  }
+  function renderWeather(w) {
+    const [icon, desc] = wmo(w.code);
+    document.getElementById('wIcon').textContent = icon;
+    document.getElementById('wTemp').textContent = Math.round(w.temp) + '°';
+    document.getElementById('wDesc').textContent = citySel.options[citySel.selectedIndex].text + ' · ' + desc;
+    document.getElementById('wExtra').textContent = '체감 ' + Math.round(w.feels) + '° · 습도 ' + w.hum + '% · 바람 ' + Math.round(w.wind) + 'km/h';
+    const days = ['일','월','화','수','목','금','토'];
+    document.getElementById('forecast').innerHTML = w.days.map((d, i) => {
+      const dt = new Date(d.t + 'T00:00:00');
+      return '<div>' + (i === 0 ? '오늘' : days[dt.getDay()]) + '<br>' + wmo(d.code)[0] + '<b>' + Math.round(d.max) + '° / ' + Math.round(d.min) + '°</b></div>';
+    }).join('');
+  }
+  loadWeather(); setInterval(loadWeather, 30 * 60 * 1000);
+
+  // ---------- 기술 뉴스 (Hacker News 공개 API) ----------
+  const newsEl = document.getElementById('news'), nStatus = document.getElementById('nStatus');
+  // 외부 API가 준 주소는 http/https 일 때만 링크로 사용 (javascript: 같은 주소 차단)
+  function safeUrl(raw) {
+    try { const u = new URL(raw); return (u.protocol === 'https:' || u.protocol === 'http:') ? u.href : ''; } catch (e) { return ''; }
+  }
+  async function loadNews() {
+    try {
+      const ids = await (await fetch('https://hacker-news.firebaseio.com/v0/topstories.json')).json();
+      const items = await Promise.all(ids.slice(0, 6).map(id => fetch('https://hacker-news.firebaseio.com/v0/item/' + id + '.json').then(r => r.json())));
+      newsEl.innerHTML = '';
+      items.filter(Boolean).forEach(it => {
+        const li = document.createElement('li'); const a = document.createElement('a');
+        a.href = safeUrl(it.url) || ('https://news.ycombinator.com/item?id=' + encodeURIComponent(it.id)); a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = it.title || '(제목 없음)';
+        const meta = document.createElement('span'); meta.className = 'meta';
+        let host = 'news.ycombinator.com'; try { if (it.url) host = new URL(it.url).hostname.replace(/^www\./, ''); } catch (e) {}
+        meta.textContent = '▲ ' + it.score + ' · ' + host;
+        li.append(a, meta); newsEl.appendChild(li);
+      });
+      nStatus.className = 'status live'; nStatus.textContent = '실시간 · Hacker News 인기 글 상위 6개';
+    } catch (err) {
+      // 연결이 막혀 있으면 가짜 헤드라인 대신 실제 기술 뉴스 사이트 바로가기를 보여 줍니다.
+      const sites = [
+        ['GeekNews (긱뉴스) — 국내 개발자 뉴스 큐레이션', 'https://news.hada.io'],
+        ['Hacker News — 해외 개발자 커뮤니티 인기 글', 'https://news.ycombinator.com'],
+        ['ZDNet Korea — IT 산업 뉴스', 'https://zdnet.co.kr'],
+        ['블로터 — 테크·스타트업 뉴스', 'https://www.bloter.net'],
+        ['The Verge — 해외 테크 뉴스', 'https://www.theverge.com/tech']
+      ];
+      newsEl.innerHTML = '';
+      sites.forEach(([t, u]) => {
+        const li = document.createElement('li'); const a = document.createElement('a');
+        a.href = u; a.target = '_blank'; a.rel = 'noopener'; a.textContent = t;
+        const meta = document.createElement('span'); meta.className = 'meta'; meta.textContent = new URL(u).hostname.replace(/^www\./, '');
+        li.append(a, meta); newsEl.appendChild(li);
+      });
+      nStatus.className = 'status offline'; nStatus.textContent = '이 환경에서는 뉴스 API에 연결할 수 없어 기술 뉴스 사이트 바로가기를 표시합니다';
+    }
+  }
+  loadNews(); setInterval(loadNews, 15 * 60 * 1000);
+})();
+</script>
+</body>
+</html>

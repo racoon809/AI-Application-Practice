@@ -1,0 +1,222 @@
+<!--
+  File    : index.html  (3-file version: index.html + style.css + script.js)
+  Source  : same code as the single-file build, split back into the
+            three files required by Step 1
+  Created : 2026-10-01 13:54 (KST, UTC+09:00)
+  Updated : 2026-10-01 14:02 (KST, UTC+09:00) - "새 일정" composer reset: button,
+            fresh form + input focus on every load, autofill off, Esc / Alt+N
+  Updated : 2026-10-02 10:41 (KST, UTC+09:00) - every load / reload clears the
+            saved tasks (starts at 0, no samples); console self-check
+            evaluateApp() (auto-runs on start)
+  Updated : 2026-10-02 11:18 (KST, UTC+09:00) - tasks persist across reloads
+            again (PRD p.4 / Step 1), inline edit with category + priority,
+            "카테고리순" sort, Step 4 dark colors and empty-state message
+  Updated : 2026-10-02 11:41 (KST, UTC+09:00) - faster long lists: reused date
+            formatters, content-visibility on task items
+  Purpose : Single-file build of the "My Tasks" todo app. HTML, the CSS from
+            style.css and the JavaScript from script.js are all inside this
+            one file, so it runs by double-clicking it (no other files needed).
+-->
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="업무·개인·공부 카테고리로 매일의 할 일을 관리하는 개인용 Todo 앱">
+  <meta name="color-scheme" content="light dark">
+  <title>My Tasks</title>
+
+  <!-- Apply the saved theme before the first paint so the page never flashes -->
+  <script>
+    (function () {
+      try {
+        var saved = JSON.parse(localStorage.getItem('myTasks.settings') || '{}');
+        if (saved.theme === 'dark' || saved.theme === 'light') {
+          document.documentElement.setAttribute('data-theme', saved.theme);
+        }
+      } catch (e) { /* storage blocked: fall back to the system theme */ }
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="page">
+    <main class="app" aria-labelledby="app-title">
+
+      <!-- ===== Header: date, title, theme switch ===== -->
+      <header class="app-header">
+        <div class="app-header__titles">
+          <p class="eyebrow" id="today-label">오늘</p>
+          <h1 id="app-title" class="app-title">My Tasks</h1>
+        </div>
+        <button id="theme-toggle" class="theme-switch" type="button" role="switch"
+                aria-checked="false" aria-label="다크 모드" title="다크/라이트 모드 전환 (Alt+D)">
+          <span class="theme-switch__track">
+            <span class="theme-switch__thumb">
+              <svg class="icon-sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg>
+              <svg class="icon-moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.6A8.2 8.2 0 0 1 9.4 4a8.2 8.2 0 1 0 10.6 10.6z"/></svg>
+            </span>
+          </span>
+        </button>
+      </header>
+
+      <!-- ===== Step 3: progress dashboard ===== -->
+      <section class="dashboard" aria-label="진행률 대시보드">
+        <div class="dashboard__top">
+          <div class="overall">
+            <p class="label">전체 진행률</p>
+            <p class="overall__figure" id="progress-text">0/0 완료 (0%)</p>
+            <div class="progress" id="progress-bar" role="progressbar"
+                 aria-label="전체 진행률" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <div class="progress__fill" id="progress-fill"></div>
+            </div>
+          </div>
+          <div class="today">
+            <p class="label">오늘 추가</p>
+            <p class="today__figure"><span id="today-count">0</span><small>개</small></p>
+          </div>
+        </div>
+
+        <ul class="cat-stats" id="cat-stats" aria-label="카테고리별 진행률">
+          <li class="cat-stat" data-category="work">
+            <div class="cat-stat__head"><span class="cat-dot"></span><span class="cat-stat__name">업무</span><span class="cat-stat__num">0/0</span></div>
+            <div class="mini-bar"><div class="mini-bar__fill"></div></div>
+          </li>
+          <li class="cat-stat" data-category="personal">
+            <div class="cat-stat__head"><span class="cat-dot"></span><span class="cat-stat__name">개인</span><span class="cat-stat__num">0/0</span></div>
+            <div class="mini-bar"><div class="mini-bar__fill"></div></div>
+          </li>
+          <li class="cat-stat" data-category="study">
+            <div class="cat-stat__head"><span class="cat-dot"></span><span class="cat-stat__name">공부</span><span class="cat-stat__num">0/0</span></div>
+            <div class="mini-bar"><div class="mini-bar__fill"></div></div>
+          </li>
+        </ul>
+
+        <!-- Step 5: random quote of the day -->
+        <figure class="quote">
+          <blockquote id="quote-text">작은 진전도 큰 성과입니다.</blockquote>
+          <figcaption id="quote-author">My Tasks</figcaption>
+          <button id="quote-refresh" class="icon-btn" type="button" aria-label="다른 명언 보기" title="다른 명언 보기">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4.5V11h-6.5"/></svg>
+          </button>
+        </figure>
+      </section>
+
+      <!-- ===== Step 4/5: search, sort, export/import ===== -->
+      <section class="controls" aria-label="검색 및 정렬">
+        <div class="controls__row">
+          <div class="search">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>
+            <label class="sr-only" for="search-input">할 일 검색</label>
+            <input id="search-input" type="search" placeholder="할 일 검색…" autocomplete="off" maxlength="100">
+          </div>
+          <div class="sort">
+            <label for="sort-select">정렬</label>
+            <select id="sort-select">
+              <option value="newest">최신순</option>
+              <option value="oldest">오래된순</option>
+              <option value="category">카테고리순</option>
+              <option value="priority">우선순위순</option>
+              <option value="status">완료상태순</option>
+              <option value="manual">직접 정렬 (드래그)</option>
+            </select>
+          </div>
+        </div>
+        <div class="controls__row controls__row--tools">
+          <button id="export-btn" class="btn btn--ghost" type="button" title="모든 데이터를 JSON 파일로 저장">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5 12 15l4.5-4.5M5 19h14"/></svg>내보내기
+          </button>
+          <button id="import-btn" class="btn btn--ghost" type="button" title="JSON 파일에서 데이터 복원">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M7.5 8.5 12 4l4.5 4.5M5 19h14"/></svg>가져오기
+          </button>
+          <input id="import-file" type="file" accept=".json,application/json" hidden>
+        </div>
+      </section>
+
+      <!-- ===== Step 2: category filters + Step 4: clear completed ===== -->
+      <div class="filter-bar">
+        <div class="filters" id="filters" role="group" aria-label="카테고리 필터">
+          <button class="filter is-active" type="button" data-filter="all" aria-pressed="true" title="전체 (Alt+1)">전체 <span class="filter__count">0</span></button>
+          <button class="filter" type="button" data-filter="work" aria-pressed="false" title="업무 (Alt+2)"><span class="cat-dot"></span>업무 <span class="filter__count">0</span></button>
+          <button class="filter" type="button" data-filter="personal" aria-pressed="false" title="개인 (Alt+3)"><span class="cat-dot"></span>개인 <span class="filter__count">0</span></button>
+          <button class="filter" type="button" data-filter="study" aria-pressed="false" title="공부 (Alt+4)"><span class="cat-dot"></span>공부 <span class="filter__count">0</span></button>
+        </div>
+        <button id="clear-completed" class="btn btn--danger-soft" type="button" title="완료된 항목 모두 삭제">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M10 7V5h4v2M7 7l1 12h8l1-12"/></svg>완료 항목 삭제
+        </button>
+      </div>
+
+      <!-- ===== Step 1: composer (input + category/priority + add) ===== -->
+      <form id="task-form" class="composer" novalidate autocomplete="off">
+        <label class="sr-only" for="task-input">새 할 일</label>
+        <input id="task-input" class="composer__input" type="text" maxlength="100"
+               placeholder="새로운 할 일을 입력하세요… (Alt+N)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" data-form-type="other" data-lpignore="true" autofocus>
+        <div class="composer__options">
+          <label class="sr-only" for="category-select">카테고리</label>
+          <select id="category-select" title="카테고리" autocomplete="off">
+            <option value="work">업무</option>
+            <option value="personal">개인</option>
+            <option value="study">공부</option>
+          </select>
+          <label class="sr-only" for="priority-select">우선순위</label>
+          <select id="priority-select" title="우선순위" autocomplete="off">
+            <option value="high">높음</option>
+            <option value="medium" selected>보통</option>
+            <option value="low">낮음</option>
+          </select>
+          <div class="composer__actions">
+            <button id="reset-form-btn" class="btn btn--ghost" type="button" title="입력 내용을 비우고 새로 작성 (Esc)">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.7"/><path d="M4 4.5V10h5.5"/></svg>새 일정
+            </button>
+            <button class="btn btn--primary" type="submit">추가</button>
+          </div>
+        </div>
+        <p class="composer__hint" id="form-hint" aria-live="polite"></p>
+      </form>
+
+      <!-- ===== Task list ===== -->
+      <section class="list-section" aria-label="할 일 목록">
+        <p class="list-meta" id="list-meta"></p>
+        <ul class="task-list" id="task-list"></ul>
+
+        <div class="empty" id="empty-state" hidden>
+          <svg class="empty__art" viewBox="0 0 120 90" aria-hidden="true">
+            <rect x="22" y="10" width="76" height="70" rx="8"/>
+            <path d="M36 32h30M36 46h40M36 60h22"/>
+            <path class="empty__check" d="M76 56l7 7 13-15"/>
+          </svg>
+          <h2 class="empty__title" id="empty-title">할 일이 없습니다. 추가해보세요!</h2>
+          <p class="empty__text" id="empty-text">오늘의 첫 할 일을 적어 볼까요? 작은 일 하나부터 시작하면 하루가 한결 가벼워져요.</p>
+        </div>
+      </section>
+
+      <footer class="app-footer">
+        <p><kbd>Alt</kbd>+<kbd>N</kbd> 새 일정 · <kbd>Esc</kbd> 입력 초기화 · <kbd>Alt</kbd>+<kbd>D</kbd> 테마 · <kbd>Alt</kbd>+<kbd>1</kbd>~<kbd>4</kbd> 필터 · 더블클릭으로 수정</p>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Step 5: toast notifications -->
+  <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="false"></div>
+
+  <!-- Step 4/5: confirm dialog (replaces window.confirm) -->
+  <div class="modal" id="modal" hidden>
+    <div class="modal__backdrop" data-modal-dismiss></div>
+    <div class="modal__panel" role="dialog" aria-modal="true" aria-labelledby="modal-title" aria-describedby="modal-message">
+      <h2 class="modal__title" id="modal-title">확인</h2>
+      <p class="modal__message" id="modal-message"></p>
+      <textarea class="modal__code" id="modal-code" readonly hidden aria-label="내보낸 JSON 데이터"></textarea>
+      <div class="modal__actions">
+        <button class="btn btn--ghost" type="button" id="modal-cancel">취소</button>
+        <button class="btn btn--primary" type="button" id="modal-confirm">확인</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<!--
+  File    : Week03-DigitRecognition/web_version/index.html
+  Created : 2026-09-23 10:00 (KST, UTC+09:00)
+  Updated : 2026-10-28 12:50 (KST, UTC+09:00) - folder renamed to Week03-DigitRecognition
+  Purpose : Canvas-based UI for the web version of the digit recognizer
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Handwritten Digit Recognition</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <header class="card-header">
+      <h1>Handwritten Digit Recognition</h1>
+      <p class="subtitle">Draw a digit (0-9) on the canvas below</p>
+    </header>
+
+    <!-- Model loading banner (hidden when the model is ready) -->
+    <section id="model-status" class="model-status" aria-live="polite">
+      <p id="model-status-text">Connecting to the local server...</p>
+      <div class="progress" role="progressbar" aria-valuemin="0"
+           aria-valuemax="100" aria-valuenow="0" id="model-progress">
+        <div class="progress-fill" id="model-progress-fill"></div>
+      </div>
+    </section>
+
+    <div class="layout">
+      <!-- Left: drawing area -->
+      <section class="draw-panel">
+        <canvas id="draw-canvas" width="280" height="280"
+                aria-label="Drawing canvas: draw a digit with mouse or finger">
+        </canvas>
+
+        <div class="buttons">
+          <button type="button" id="predict-btn" class="btn btn-predict"
+                  disabled>Recognize</button>
+          <button type="button" id="clear-btn" class="btn btn-clear">Clear</button>
+        </div>
+
+        <label class="live-toggle">
+          <input type="checkbox" id="live-toggle" checked>
+          Live prediction (predict after every stroke)
+        </label>
+        <p class="hint">Shortcuts: Enter = Recognize, Esc = Clear</p>
+      </section>
+
+      <!-- Right: preprocessing preview and results -->
+      <section class="result-panel" aria-live="polite">
+        <div class="result-top">
+          <div class="preview-box">
+            <h2>Preprocessed (28&times;28)</h2>
+            <canvas id="preview-canvas" width="28" height="28"
+                    aria-label="Preprocessed 28 by 28 model input"></canvas>
+          </div>
+          <div class="summary">
+            <div id="big-digit" class="big-digit">?</div>
+            <p id="predicted-text" class="predicted-text">Predicted Digit: -</p>
+            <p id="confidence-text" class="confidence-text">Confidence: -</p>
+          </div>
+        </div>
+
+        <h2>Predictions</h2>
+        <ol id="prob-list" class="prob-list"></ol>
+
+        <p id="message" class="message">Draw a digit and click 'Recognize'</p>
+      </section>
+    </div>
+
+    <footer class="card-footer">
+      <span>MNIST &middot; MLP 784-128-10 &middot; runs in your browser</span>
+      <span id="accuracy-text"></span>
+    </footer>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

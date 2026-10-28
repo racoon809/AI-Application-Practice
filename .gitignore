@@ -1,0 +1,28 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 에디터
+.vscode/
+.idea/
+
+# Python (Week03-DigitRecognition)
+__pycache__/
+*.pyc
+venv/
+.venv/
+*.h5
+*.keras
+*.pt
+*.pth
+
+# 개인 설정 (커스텀 명령어 폴더 .claude/commands 는 올림)
+.claude/settings.local.json
+.env
+
+# 내보낸 데이터
+todos-*.json
+
+# 테스트 캐시
+.pytest_cache/

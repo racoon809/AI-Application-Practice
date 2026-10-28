@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>할 일 관리 앱 · 데스크톱</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- 6주차: 데스크톱 넓은 화면용 3단 레이아웃 (사이드바 | 목록 | 대시보드) -->
+  <div class="layout">
+
+    <!-- ① 사이드바 -->
+    <aside class="sidebar" aria-label="사이드바">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">✓</span>
+        <div>
+          <strong>할 일 관리</strong>
+          <small id="autoStatus">자동 분류: 확인 후 적용</small>
+        </div>
+      </div>
+
+      <div class="ring-wrap">
+        <div id="overallRing" class="ring" style="--pct:0"><span id="overallPercent">0%</span></div>
+        <div>
+          <b>오늘의 진행률</b>
+          <p id="overallText" class="muted">0 / 0개 완료</p>
+        </div>
+      </div>
+
+      <nav class="side-nav" aria-label="보기 필터">
+        <p class="nav-label">보기</p>
+        <button class="filter-btn" data-filter="all" type="button"><span class="ico">▤</span>전체 <em data-count="all">0</em></button>
+        <button class="filter-btn" data-filter="active" type="button"><span class="ico">○</span>진행 중 <em data-count="all">0</em></button>
+        <button class="filter-btn" data-filter="done" type="button"><span class="ico">●</span>완료됨 <em data-count="done">0</em></button>
+        <p class="nav-label">카테고리</p>
+        <button class="filter-btn" data-filter="업무" type="button"><span class="dot" data-category="업무"></span>업무 <em data-count="업무">0</em></button>
+        <button class="filter-btn" data-filter="개인" type="button"><span class="dot" data-category="개인"></span>개인 <em data-count="개인">0</em></button>
+        <button class="filter-btn" data-filter="공부" type="button"><span class="dot" data-category="공부"></span>공부 <em data-count="공부">0</em></button>
+      </nav>
+
+      <div class="side-tools">
+        <p class="nav-label">자동 분류</p>
+        <button id="reclassifyBtn" class="side-btn" type="button">🔄 자동 재분류</button>
+        <button id="settingsBtn" class="side-btn" type="button">⚙️ 분류 설정</button>
+        <p class="nav-label">데이터</p>
+        <button id="exportBtn" class="side-btn" type="button">⬇️ JSON 내보내기</button>
+        <button id="importBtn" class="side-btn" type="button">⬆️ JSON 가져오기</button>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+      </div>
+
+      <button id="themeToggle" class="side-btn theme" type="button" aria-pressed="false">🌙 다크 모드</button>
+    </aside>
+
+    <!-- ② 메인: 입력 + 목록 -->
+    <main class="main">
+      <header class="topbar">
+        <h1 id="listTitle">전체 할 일</h1>
+        <div class="top-tools">
+          <label class="sr-only" for="searchInput">할 일 검색</label>
+          <input id="searchInput" type="search" placeholder="🔍 할 일 검색…">
+          <label class="sr-only" for="sortSelect">정렬</label>
+          <select id="sortSelect">
+            <option value="newest">최신순</option>
+            <option value="oldest">오래된순</option>
+            <option value="activeFirst">미완료 먼저</option>
+            <option value="category">카테고리순</option>
+            <option value="alpha">가나다순</option>
+          </select>
+        </div>
+      </header>
+
+      <form id="todoForm" class="add-form" autocomplete="off">
+        <label class="sr-only" for="todoInput">새 할 일</label>
+        <input id="todoInput" type="text" placeholder="새로운 할 일을 입력하세요… ( / 키로 바로 입력)" maxlength="100">
+        <label class="sr-only" for="categorySelect">카테고리</label>
+        <select id="categorySelect">
+          <option value="업무">업무</option>
+          <option value="개인" selected>개인</option>
+          <option value="공부">공부</option>
+        </select>
+        <button class="btn primary" type="submit">추가</button>
+        <p id="smartHint" class="smart-hint" aria-live="polite"></p>
+      </form>
+
+      <div class="list-head" aria-hidden="true">
+        <span></span><span>카테고리</span><span>할 일</span><span></span>
+      </div>
+      <ul id="todoList" class="todo-list"></ul>
+      <p id="emptyState" class="empty" hidden>첫 할 일을 추가해 보세요!</p>
+
+      <div class="list-foot">
+        <button id="clearCompleted" class="btn" type="button">완료된 항목 삭제</button>
+        <span class="muted shortcuts">단축키 <kbd>/</kbd> 입력 · <kbd>Alt</kbd>+<kbd>D</kbd> 다크 모드 · <kbd>Alt</kbd>+<kbd>0~3</kbd> 필터 · 더블 클릭 수정</span>
+      </div>
+    </main>
+
+    <!-- ③ 오른쪽 패널: 카테고리 진행률 + 격언 -->
+    <aside class="insights" aria-label="대시보드">
+      <section class="panel">
+        <h2>카테고리별 진행률</h2>
+        <div class="cat-row"><span><span class="dot" data-category="업무"></span>업무</span><small data-progress-text="업무">0/0</small><div class="progress"><i data-progress="업무"></i></div></div>
+        <div class="cat-row"><span><span class="dot" data-category="개인"></span>개인</span><small data-progress-text="개인">0/0</small><div class="progress"><i data-progress="개인"></i></div></div>
+        <div class="cat-row"><span><span class="dot" data-category="공부"></span>공부</span><small data-progress-text="공부">0/0</small><div class="progress"><i data-progress="공부"></i></div></div>
+      </section>
+      <section class="panel">
+        <h2>오늘의 격언</h2>
+        <p id="quote" class="quote">“”</p>
+        <p id="quoteAuthor" class="muted"></p>
+        <button id="newQuote" class="btn" type="button">다른 격언</button>
+      </section>
+      <section class="panel tip">
+        <h2>자동 분류 키워드 예시</h2>
+        <p><b class="c-work">업무</b> 회의 · 개발 · 회사 · 보고서</p>
+        <p><b class="c-personal">개인</b> 집 · 운동 · 영화 · 장보기</p>
+        <p><b class="c-study">공부</b> 시험 · 과제 · 강의 · 복습</p>
+      </section>
+    </aside>
+  </div>
+
+  <!-- 5주차 다이얼로그 (모바일 버전과 동일) -->
+  <dialog id="suggestDialog" class="dialog">
+    <h2>카테고리 추천</h2>
+    <p id="suggestText"></p>
+    <p id="suggestReason" class="muted"></p>
+    <div class="row end">
+      <button id="keepOriginal" class="btn" type="button">그대로 등록</button>
+      <button id="applySuggest" class="btn primary" type="button">추천대로 등록</button>
+    </div>
+  </dialog>
+
+  <dialog id="reclassifyDialog" class="dialog">
+    <h2>자동 재분류</h2>
+    <p class="muted">키워드 분석 결과 카테고리가 달라 보이는 항목입니다. 바꿀 항목만 체크하세요.</p>
+    <ul id="reclassifyList" class="reclassify-list"></ul>
+    <div class="row end">
+      <button id="cancelReclassify" class="btn" type="button">취소</button>
+      <button id="applyReclassify" class="btn primary" type="button">선택 항목 적용</button>
+    </div>
+  </dialog>
+
+  <dialog id="settingsDialog" class="dialog">
+    <h2>분류 설정</h2>
+    <label class="switch"><input id="autoToggle" type="checkbox"> 키워드 기반 자동 분류 사용</label>
+    <fieldset>
+      <legend>추천이 다를 때</legend>
+      <label><input type="radio" name="classifyMode" value="confirm" id="modeConfirm"> 확인 창으로 물어보기</label>
+      <label><input type="radio" name="classifyMode" value="auto" id="modeAuto"> 바로 추천 카테고리로 저장</label>
+    </fieldset>
+    <fieldset>
+      <legend>내 키워드 추가 (쉼표로 구분)</legend>
+      <label for="kwWork">업무 <small class="muted" data-default-keywords="업무"></small></label>
+      <input id="kwWork" data-keywords="업무" placeholder="예: 스프린트, 데일리 스크럼">
+      <label for="kwPersonal">개인 <small class="muted" data-default-keywords="개인"></small></label>
+      <input id="kwPersonal" data-keywords="개인" placeholder="예: 강아지 산책, 넷플릭스">
+      <label for="kwStudy">공부 <small class="muted" data-default-keywords="공부"></small></label>
+      <input id="kwStudy" data-keywords="공부" placeholder="예: 인공지능활용실습, 자료구조">
+    </fieldset>
+    <div class="row end">
+      <button id="cancelSettings" class="btn" type="button">취소</button>
+      <button id="saveSettings" class="btn primary" type="button">저장</button>
+    </div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script src="../core.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
